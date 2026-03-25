@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace Esri.AsciiRaster.Parser;
+namespace AsciiRaster.Parser;
 
 public sealed class FileReader
 {

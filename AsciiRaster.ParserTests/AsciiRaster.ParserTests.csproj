@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Esri.AsciiRaster.Parser\Esri.AsciiRaster.Parser.csproj" />
+    <ProjectReference Include="..\AsciiRaster.Parser\AsciiRaster.Parser.csproj" />
   </ItemGroup>
 
   <ItemGroup>

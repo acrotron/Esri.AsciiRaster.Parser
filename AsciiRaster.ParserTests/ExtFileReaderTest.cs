@@ -1,7 +1,7 @@
-﻿using Esri.AsciiRaster.Parser;
+﻿using AsciiRaster.Parser;
 using AwesomeAssertions;
 
-namespace Esri.AsciiRaster.ParserTests;
+namespace AsciiRaster.ParserTests;
 
 [TestClass]
 public class ExtFileReaderTest

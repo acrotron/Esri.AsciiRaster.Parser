@@ -4,7 +4,7 @@ using NetTopologySuite.Geometries;
 using ProjNet.CoordinateSystems;
 using ProjNet.CoordinateSystems.Transformations;
 
-namespace Esri.AsciiRaster.Parser;
+namespace AsciiRaster.Parser;
 
 /// <summary>
 /// Extension of the regular Esri Ascii Raster reader that will create a list of Coordinates based

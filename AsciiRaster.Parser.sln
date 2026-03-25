@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11520.95
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiRaster.Parser", "AsciiRaster.Parser\AsciiRaster.Parser.csproj", "{82991DCA-C6F2-FA38-CEF0-58D05DF17EDC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsciiRaster.ParserTests", "AsciiRaster.ParserTests\AsciiRaster.ParserTests.csproj", "{BC55D177-CA59-E2BE-429F-9758B7D40106}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{82991DCA-C6F2-FA38-CEF0-58D05DF17EDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82991DCA-C6F2-FA38-CEF0-58D05DF17EDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82991DCA-C6F2-FA38-CEF0-58D05DF17EDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82991DCA-C6F2-FA38-CEF0-58D05DF17EDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC55D177-CA59-E2BE-429F-9758B7D40106}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC55D177-CA59-E2BE-429F-9758B7D40106}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC55D177-CA59-E2BE-429F-9758B7D40106}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC55D177-CA59-E2BE-429F-9758B7D40106}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D6BB00D6-D6BC-4FA9-80EE-324211B7AB68}
+	EndGlobalSection
+EndGlobal
