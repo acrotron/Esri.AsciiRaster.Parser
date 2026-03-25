@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Esri.AsciiRaster.Parser</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Bjorn Kuiper</Authors>
+    <Description>A .NET library for reading and parsing Esri ASCII raster (.asc) files, with optional coordinate transformation support.</Description>
+    <PackageTags>esri;ascii;raster;asc;gis;parser</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/acrotron/Esri.AsciiRaster.Parser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NetTopologySuite" />
+    <PackageReference Include="ProjNET4GeoAPI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Esri.AsciiRaster.ParserTests" />
+  </ItemGroup>
+
+</Project>
