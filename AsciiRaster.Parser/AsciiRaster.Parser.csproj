@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>AsciiRaster.Parser</PackageId>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>Bjorn Kuiper</Authors>
     <Description>A .NET library for reading and parsing Esri ASCII raster (.asc) files, with optional conversion of AEDT Lambert Conformal Conic grids to WGS84.</Description>
     <PackageTags>esri;ascii;raster;asc;gis;parser</PackageTags>
