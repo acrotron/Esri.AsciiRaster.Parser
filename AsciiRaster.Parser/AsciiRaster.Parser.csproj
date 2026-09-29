@@ -2,14 +2,15 @@
 
   <PropertyGroup>
     <PackageId>AsciiRaster.Parser</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Authors>Bjorn Kuiper</Authors>
-    <Description>A .NET library for reading and parsing Esri ASCII raster (.asc) files, with optional coordinate transformation support.</Description>
+    <Description>A .NET library for reading and parsing Esri ASCII raster (.asc) files, with optional conversion of AEDT Lambert Conformal Conic grids to WGS84.</Description>
     <PackageTags>esri;ascii;raster;asc;gis;parser</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
 	<RepositoryUrl>https://github.com/acrotron/Esri.AsciiRaster.Parser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,11 +19,10 @@
 
   <ItemGroup>
     <PackageReference Include="NetTopologySuite" />
-    <PackageReference Include="ProjNET4GeoAPI" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Esri.AsciiRaster.ParserTests" />
+    <InternalsVisibleTo Include="AsciiRaster.ParserTests" />
   </ItemGroup>
 
 </Project>

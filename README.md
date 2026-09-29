@@ -1,11 +1,13 @@
 # Esri.AsciiRaster.Parser
 
-A .NET library for reading and parsing [Esri ASCII raster](https://en.wikipedia.org/wiki/Esri_grid) (`.asc`) files, with optional coordinate transformation using Lambert Conformal Conic projection.
+A .NET library for reading and parsing [Esri ASCII raster](https://en.wikipedia.org/wiki/Esri_grid) (`.asc`) files, with optional conversion of AEDT Lambert Conformal Conic grids to WGS84 longitude/latitude.
+
+The package depends only on [NetTopologySuite](https://github.com/NetTopologySuite/NetTopologySuite) (BSD-3-Clause).
 
 ## Installation
 
 ```shell
-dotnet add package Esri.AsciiRaster.Parser
+dotnet add package AsciiRaster.Parser
 ```
 
 ## Usage
@@ -13,7 +15,7 @@ dotnet add package Esri.AsciiRaster.Parser
 ### Reading an ASCII raster file
 
 ```csharp
-using Esri.AsciiRaster.Parser;
+using AsciiRaster.Parser;
 
 var reader = new FileReader();
 EsriAsciiRaster raster = reader.Read("path/to/file.asc");
@@ -21,16 +23,24 @@ EsriAsciiRaster raster = reader.Read("path/to/file.asc");
 Console.WriteLine($"Columns: {raster.NCols}, Rows: {raster.NRows}");
 Console.WriteLine($"Cell size: {raster.CellSize}");
 
-// Access raster data
+// Access raster data; row 0 is the top row of the file
 double value = raster.Data[col, row];
+
+// Center of the lower-left cell, whether the file uses xllcorner or xllcenter
+// (the one the file doesn't use is NaN in XLLCorner/XLLCenter)
+double x0 = raster.LowerLeftCellCenterX;
+double y0 = raster.LowerLeftCellCenterY;
 ```
 
 ### Reading with coordinate transformation
 
-Use `ExtFileReader` to transform projected coordinates into geographic (WGS 84) coordinates via a Lambert Conformal Conic projection centered on a given latitude/longitude.
+Use `ExtFileReader` for rasters whose coordinates are Lambert Conformal Conic meters relative to an origin, as in
+AEDT noise grids. The projection is AEDT's tangential LCC on WGS84: both standard parallels and the latitude of origin
+are `lat`, the central meridian is `long`. Each cell is returned at its center, taken from the header's
+`xllcorner`/`yllcorner` (plus half a cell) or `xllcenter`/`yllcenter`; NODATA cells keep the NODATA value as M.
 
 ```csharp
-using Esri.AsciiRaster.Parser;
+using AsciiRaster.Parser;
 
 var reader = new ExtFileReader();
 
@@ -71,7 +81,7 @@ nodata_value  -32768
 
 ### Data format
 
-- Cell values are delimited by spaces.
+- Cell values are delimited by spaces or tabs. Header keys are case-insensitive and may come in any order.
 - Carriage returns at the end of each row are not required. The number of columns in the header determines when a new row begins.
 - Row 1 of the data is at the top of the raster, row 2 is just under row 1, and so on.
 
