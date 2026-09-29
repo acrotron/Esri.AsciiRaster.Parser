@@ -1,133 +1,171 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace AsciiRaster.Parser;
 
+/// <summary>
+/// Reads Esri ASCII raster (<c>.asc</c>) files.
+/// </summary>
 public sealed class FileReader
 {
+    private static readonly char[] Whitespace = [' ', '\t'];
+
+    private static readonly HashSet<string> HeaderKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ncols", "nrows", "xllcorner", "yllcorner", "xllcenter", "yllcenter", "cellsize", "nodata_value"
+    };
+
+    /// <summary>
+    /// Reads an Esri ASCII raster file.
+    /// </summary>
+    /// <remarks>
+    /// Header keys are case-insensitive, may come in any order and may be separated from their values by spaces or
+    /// tabs. <c>ncols</c>, <c>nrows</c>, <c>cellsize</c> and either <c>xllcorner</c>/<c>yllcorner</c> or
+    /// <c>xllcenter</c>/<c>yllcenter</c> are required; <c>nodata_value</c> defaults to
+    /// <see cref="EsriAsciiRaster.DefaultNoData"/>. Cell values are read as one whitespace-separated stream in
+    /// row-major order, so rows may wrap across lines.
+    /// </remarks>
+    /// <param name="filePath">Path of the <c>.asc</c> file.</param>
+    /// <exception cref="InvalidDataException">The header is incomplete or invalid, or the number of values is wrong.</exception>
     public EsriAsciiRaster Read(string filePath)
     {
-        EsriAsciiRaster raster = new EsriAsciiRaster();
-        var hasNoDataSpecified = false;
-
         using StreamReader reader = new StreamReader(filePath);
+
+        var header = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        string? line;
+
+        // Header lines start with a known key; the first line that doesn't is the first data line.
+        while ((line = reader.ReadLine()) != null)
         {
-            hasNoDataSpecified = ParseHeader(reader, ref raster);
+            string[] parts = line.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 0) continue;
+            if (!HeaderKeys.Contains(parts[0])) break;
+
+            if (parts.Length != 2)
+            {
+                throw new InvalidDataException($"Invalid header line \"{line}\": expected a key and one value.");
+            }
+
+            if (!header.TryAdd(parts[0], parts[1]))
+            {
+                throw new InvalidDataException($"Duplicate header key \"{parts[0]}\".");
+            }
         }
 
-        using StreamReader dataReader = new StreamReader(filePath);
-        {
-            ParseData(dataReader, hasNoDataSpecified, ref raster);
-        }
+        EsriAsciiRaster raster = CreateRaster(header);
+
+        ReadData(reader, line, raster);
 
         return raster;
     }
 
-    private bool ParseHeader(StreamReader reader, ref EsriAsciiRaster raster)
+    private static EsriAsciiRaster CreateRaster(Dictionary<string, string> header)
     {
-        var headerBuffer = new List<string>();
-        int count = 0;
-
-        // read the first five lines.
-        while (reader.ReadLine() is { } line && count < 6)
+        var raster = new EsriAsciiRaster
         {
-            headerBuffer.Add(line);
-            count++;
+            NCols = ParseInt(header, "ncols"),
+            NRows = ParseInt(header, "nrows"),
+            CellSize = ParseDouble(header, "cellsize")
+        };
+
+        if (raster.NCols <= 0 || raster.NRows <= 0)
+        {
+            throw new InvalidDataException($"ncols and nrows must be positive, got {raster.NCols} and {raster.NRows}.");
         }
 
-        if (count != 6)
+        if (!(raster.CellSize > 0))
         {
-            throw new InvalidDataException($"Invalid header.");
+            throw new InvalidDataException($"cellsize must be positive, got {raster.CellSize}.");
         }
 
-        TryParseHeaderValue<int>(headerBuffer[0], "ncols", out var nCols);
-        raster.NCols = nCols;
-
-        TryParseHeaderValue<int>(headerBuffer[1], "nrows", out var nRows);
-        raster.NRows = nRows;
-
-        if (TryParseHeaderValue<double>(headerBuffer[2], "xllcorner", out var xllCorner) && TryParseHeaderValue<double>(headerBuffer[3], "yllcorner", out var yllCorner))
+        if (header.ContainsKey("xllcorner") || header.ContainsKey("yllcorner"))
         {
-            raster.XLLCorner = xllCorner;
-            raster.YLLCorner = yllCorner;
+            raster.XLLCorner = ParseDouble(header, "xllcorner");
+            raster.YLLCorner = ParseDouble(header, "yllcorner");
+        }
+        else if (header.ContainsKey("xllcenter") || header.ContainsKey("yllcenter"))
+        {
+            raster.XLLCenter = ParseDouble(header, "xllcenter");
+            raster.YLLCenter = ParseDouble(header, "yllcenter");
         }
         else
         {
-            TryParseHeaderValue<double>(headerBuffer[2], "xllcenter", out var xllCenter);
-            TryParseHeaderValue<double>(headerBuffer[3], "yllcenter", out var yllCenter);
-            raster.XLLCenter = xllCenter;
-            raster.YLLCenter = yllCenter;
+            throw new InvalidDataException("Missing header: xllcorner/yllcorner or xllcenter/yllcenter.");
         }
 
-        TryParseHeaderValue<double>(headerBuffer[4], "cellsize", out var cellSize);
-        raster.CellSize = cellSize;
-
-        string noDataValueLine = headerBuffer[5];
-
-        if (noDataValueLine.StartsWith("nodata_value", StringComparison.OrdinalIgnoreCase))
+        if (header.ContainsKey("xllcorner") && header.ContainsKey("xllcenter"))
         {
-            TryParseHeaderValue<double>(noDataValueLine, "nodata_value", out var nodataValue);
-            raster.NoDataValue = nodataValue;
-            return true;
+            throw new InvalidDataException("The header declares both xllcorner and xllcenter.");
         }
-        else
-        {
-            raster.NoDataValue = EsriAsciiRaster.DefaultNoData;
-            return false;
-        }
+
+        raster.NoDataValue = header.ContainsKey("nodata_value")
+            ? ParseDouble(header, "nodata_value")
+            : EsriAsciiRaster.DefaultNoData;
+
+        return raster;
     }
 
-    private static bool TryParseHeaderValue<T>(string line, string expectedKey, out T? output)
+    private static void ReadData(StreamReader reader, string? firstDataLine, EsriAsciiRaster raster)
     {
-        string[] parts = line.Split([' '], StringSplitOptions.RemoveEmptyEntries);
+        int nCols = raster.NCols;
+        long expected = (long)nCols * raster.NRows;
+        var data = new double[nCols, raster.NRows];
+        long index = 0;
 
-        if (parts.Length != 2 || !parts[0].Equals(expectedKey, StringComparison.OrdinalIgnoreCase))
+        for (string? line = firstDataLine; line != null; line = reader.ReadLine())
         {
-            output = default;
-            return false;
+            foreach (string token in line.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (index == expected)
+                {
+                    throw new InvalidDataException($"More than the expected {expected} (ncols x nrows) values.");
+                }
+
+                if (!double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+                {
+                    throw new InvalidDataException($"\"{token}\" is not a number (value {index + 1}).");
+                }
+
+                data[index % nCols, index / nCols] = value;
+                index++;
+            }
         }
 
-        output = (T)Convert.ChangeType(parts[1], typeof(T), CultureInfo.InvariantCulture);
-        return true;
+        if (index != expected)
+        {
+            throw new InvalidDataException($"Expected {expected} (ncols x nrows) values but found {index}.");
+        }
+
+        raster.Data = data;
     }
 
-    private void ParseData(StreamReader reader, bool hasNoDataSpecified, ref EsriAsciiRaster raster)
+    private static int ParseInt(Dictionary<string, string> header, string key)
     {
-        // skip header.
-        int header = hasNoDataSpecified ? 5 : 4;
-        int count = 0;
-
-        while ((_ = reader.ReadLine()) != null && count < header)
+        if (!header.TryGetValue(key, out string? text))
         {
-            count++;
+            throw new InvalidDataException($"Missing header: {key}.");
         }
 
-        if (count != header)
+        if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
         {
-            throw new InvalidDataException($"Invalid header.");
+            throw new InvalidDataException($"Header {key} \"{text}\" is not an integer.");
         }
 
-        raster.Data = new double[raster.NCols, raster.NRows];
+        return value;
+    }
 
-        for (int row = 0; row < raster.NRows; row++)
+    private static double ParseDouble(Dictionary<string, string> header, string key)
+    {
+        if (!header.TryGetValue(key, out string? text))
         {
-            string? line = reader.ReadLine();
-
-            if (line == null)
-            {
-                throw new InvalidDataException("Unexpected end of file while reading raster data.");
-            }
-
-            string[] values = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (values.Length != raster.NCols)
-            {
-                throw new InvalidDataException($"Expected {raster.NCols} values on row {row}, but got {values.Length}.");
-            }
-
-            for (int col = 0; col < raster.NCols; col++)
-            {
-                raster.Data[col, row] = double.Parse(values[col], CultureInfo.InvariantCulture);
-            }
+            throw new InvalidDataException($"Missing header: {key}.");
         }
+
+        if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+        {
+            throw new InvalidDataException($"Header {key} \"{text}\" is not a number.");
+        }
+
+        return value;
     }
 }
